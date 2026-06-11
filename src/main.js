@@ -378,8 +378,7 @@ if (filtersForm) {
     const nextSearchParams = buildFilterSearchParams(filtersForm, buildSearchParams())
     const page = 1
     syncFilterStateFromUrl(filtersForm, nextSearchParams)
-    updateBrowserUrl(page, nextSearchParams, false)
-    loadPage(page, { pushState: true, searchParams: nextSearchParams })
+    window.location.assign(buildPageUrl(page, nextSearchParams))
   }
 
   filtersForm.addEventListener('change', (event) => {
