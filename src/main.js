@@ -297,6 +297,7 @@ const templateItem = listContainer?.querySelector('[data-partner-template]')
 const emptyState = document.querySelector('[data-partner-empty]')
 const paginationHost = document.querySelector('[data-partner-pagination]')
 const statusHost = document.querySelector('[data-partner-status]')
+let activeLoadId = 0
 
 if (!listContainer || !templateItem || !emptyState || !paginationHost) {
   throw new Error('Required partner filter markup was not found on the page')
@@ -305,6 +306,8 @@ if (!listContainer || !templateItem || !emptyState || !paginationHost) {
 templateItem.hidden = true
 
 async function loadPage(page, { pushState = true, searchParams = buildSearchParams() } = {}) {
+  const loadId = ++activeLoadId
+
   if (statusHost) {
     statusHost.textContent = 'Loading partners...'
   }
@@ -312,11 +315,19 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
   try {
     const response = await fetch(buildRequestUrl(page, searchParams))
 
+    if (loadId !== activeLoadId) {
+      return
+    }
+
     if (!response.ok) {
       throw new Error(`Request failed with ${response.status}`)
     }
 
     const payload = await response.json()
+    if (loadId !== activeLoadId) {
+      return
+    }
+
     const { items, pagination } = payload
 
     for (const child of Array.from(listContainer.children)) {
@@ -355,6 +366,10 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
       statusHost.textContent = `Showing page ${pagination.page} of ${pagination.totalPages}.`
     }
   } catch (error) {
+    if (loadId !== activeLoadId) {
+      return
+    }
+
     console.error(error)
     for (const child of Array.from(listContainer.children)) {
       if (child !== templateItem) {
@@ -377,8 +392,8 @@ if (filtersForm) {
   const applyFilters = () => {
     const nextSearchParams = buildFilterSearchParams(filtersForm, buildSearchParams())
     const page = 1
-    syncFilterStateFromUrl(filtersForm, nextSearchParams)
-    window.location.assign(buildPageUrl(page, nextSearchParams))
+    updateBrowserUrl(page, nextSearchParams, false)
+    loadPage(page, { pushState: true, searchParams: nextSearchParams })
   }
 
   filtersForm.addEventListener('change', (event) => {
