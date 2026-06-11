@@ -178,6 +178,10 @@ function updateBrowserUrl(page, searchParams, replace = false) {
   history.pushState({ page }, '', url)
 }
 
+function scrollToTopGracefully() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 function renderTierList(container, tiers) {
   if (!container) {
     return
@@ -385,6 +389,7 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
       pagination,
       (nextPage) => {
         updateBrowserUrl(nextPage, searchParams, false)
+        scrollToTopGracefully()
         loadPage(nextPage, { pushState: true, searchParams })
       },
       searchParams,
@@ -393,7 +398,7 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
     if (statusHost) {
       statusHost.textContent = `Showing page ${pagination.page} of ${pagination.totalPages}.`
     }
-    } catch (error) {
+  } catch (error) {
     if (loadId !== activeLoadId) {
       return
     }
@@ -421,6 +426,7 @@ if (filtersForm) {
     const nextSearchParams = buildFilterSearchParams(filtersForm, buildSearchParams())
     const page = 1
     updateBrowserUrl(page, nextSearchParams, false)
+    scrollToTopGracefully()
     loadPage(page, { pushState: true, searchParams: nextSearchParams })
   }
 

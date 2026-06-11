@@ -129,6 +129,21 @@ function matchesFacetSelection(values: string[], selected: Set<string>) {
   return values.some((value) => selected.has(value))
 }
 
+function matchesTextSearch(partner: PartnerCard, searchTerm: string) {
+  if (searchTerm.length === 0) {
+    return true
+  }
+
+  const searchableValues = [
+    partner.name,
+    partner.type?.name ?? '',
+    ...partner.tiers.map((tier) => tier.name),
+    ...partner.locations.map((location) => location.name),
+  ]
+
+  return searchableValues.some((value) => value.toLowerCase().includes(searchTerm))
+}
+
 export function filterPartnerCards(partners: PartnerCard[], filters: PartnerFacetFilters) {
   const selectedTierValues = new Set(filters.tiers.map(normalizeFilterValue).filter(Boolean))
   const selectedTypeValues = new Set(filters.types.map(normalizeFilterValue).filter(Boolean))
@@ -151,10 +166,9 @@ export function filterPartnerCards(partners: PartnerCard[], filters: PartnerFace
     const typeValues = relationFilterValues(partner.type)
     const locationValues = partner.locations.flatMap((location) => relationFilterValues(location))
     const tagValues = partner.tags.flatMap((tag) => relationFilterValues(tag))
-    const matchesName = searchTerm.length === 0 || partner.name.toLowerCase().includes(searchTerm)
 
     return (
-      matchesName &&
+      matchesTextSearch(partner, searchTerm) &&
       matchesFacetSelection(tierValues, selectedTierValues) &&
       matchesFacetSelection(typeValues, selectedTypeValues) &&
       matchesFacetSelection(locationValues, selectedLocationValues) &&
