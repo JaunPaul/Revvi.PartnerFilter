@@ -1,0 +1,85 @@
+<!-- [Attributes by Finsweet] CMS Nest -->
+<script
+  async
+  src="https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsnest@1/cmsnest.js"
+></script>
+
+<!-- Finsweet Attributes -->
+<script
+  async
+  type="module"
+  src="https://cdn.jsdelivr.net/npm/@finsweet/attributes@2/attributes.js"
+  fs-list
+></script>
+
+<!--Custom filtering-->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(function () {
+      const cards = [
+        ...document.querySelectorAll(".w-dyn-item:has(.partners-card)"),
+      ];
+      const emptyState = document.getElementById("filter-empty");
+
+      function getSelected(collection) {
+        return [
+          ...document.querySelectorAll(
+            `.parametr-text[data-collection="${collection}"]`,
+          ),
+        ]
+          .filter(
+            (span) =>
+              span
+                .closest(".parametr-checkbox")
+                .querySelector('input[type="checkbox"]').checked,
+          )
+          .map((span) => span.textContent.toLowerCase().trim());
+      }
+
+      function filterCards() {
+        const selectedTiers = getSelected("tiers");
+        const selectedLocations = getSelected("locations");
+        const selectedTypes = getSelected("type");
+
+        const matchingCards = cards.filter((card) => {
+          const tiers = [
+            ...card.querySelectorAll('[fs-cmsnest-collection="tiers"] a'),
+          ].map((el) => el.textContent.toLowerCase().trim());
+          const locations = [
+            ...card.querySelectorAll('[fs-cmsnest-collection="locations"] a'),
+          ].map((el) => el.textContent.toLowerCase().trim());
+          const type = card
+            .querySelector(".tag-small")
+            ?.textContent.toLowerCase()
+            .trim();
+
+          const tiersMatch =
+            selectedTiers.length === 0 ||
+            selectedTiers.some((s) => tiers.includes(s));
+          const locationsMatch =
+            selectedLocations.length === 0 ||
+            selectedLocations.some((s) => locations.includes(s));
+          const typeMatch =
+            selectedTypes.length === 0 || selectedTypes.includes(type);
+
+          return tiersMatch && locationsMatch && typeMatch;
+        });
+
+        cards.forEach((card) => {
+          card.style.display = matchingCards.includes(card) ? "" : "none";
+        });
+
+        if (emptyState)
+          emptyState.style.display = matchingCards.length === 0 ? "" : "none";
+      }
+
+      document
+        .querySelectorAll('.parametr-checkbox input[type="checkbox"]')
+        .forEach((cb) => {
+          cb.addEventListener("change", filterCards);
+        });
+
+      filterCards();
+    }, 1000);
+  });
+</script>

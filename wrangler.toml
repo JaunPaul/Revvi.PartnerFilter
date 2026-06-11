@@ -3,6 +3,7 @@ main = "worker/index.ts"
 compatibility_date = "2026-06-11"
 
 [vars]
+ALLOWED_ORIGINS = "https://thes-fantabulous-site-e67dcc.webflow.io,https://www.joinrevvi.com,https://joinrevvi.com"
 
 [triggers]
 crons = ["0 */6 * * *"]

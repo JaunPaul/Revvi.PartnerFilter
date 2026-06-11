@@ -4,6 +4,7 @@ import type { PartnerListResponse } from '../shared/partner-api'
 
 type Env = {
   WEBFLOW_TOKEN?: string
+  ALLOWED_ORIGINS?: string
 }
 
 const DEFAULT_PAGE_SIZE = 12
@@ -41,12 +42,53 @@ function parseTextValue(searchParams: URLSearchParams, key: string) {
   return searchParams.get(key)?.trim() ?? ''
 }
 
+function parseAllowedOrigins(value: string | undefined) {
+  return new Set(
+    (value ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  )
+}
+
+function corsHeaders(origin: string | null) {
+  if (!origin) {
+    return {}
+  }
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  }
+}
+
+function isAllowedOrigin(origin: string | null, allowedOrigins: Set<string>) {
+  if (!origin) {
+    return true
+  }
+
+  return allowedOrigins.has(origin)
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
+    const origin = request.headers.get('Origin')
+    const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS)
+
+    if (!isAllowedOrigin(origin, allowedOrigins)) {
+      return json({ ok: false, error: 'Origin not allowed' }, { status: 403, headers: corsHeaders(origin) })
+    }
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders(origin) })
+    }
 
     if (url.pathname === '/health') {
-      return json({ ok: true, service: 'revvi-partner-filter-worker' })
+      return json({ ok: true, service: 'revvi-partner-filter-worker' }, { headers: corsHeaders(origin) })
     }
 
     if (url.pathname === '/partners') {
@@ -68,10 +110,10 @@ export default {
         siteId: index.siteId,
         items: paged.items,
         pagination: paged.pagination,
-      } satisfies PartnerListResponse)
+      } satisfies PartnerListResponse, { headers: corsHeaders(origin) })
     }
 
-    return json({ ok: true, message: 'Cloudflare Worker is ready.', path: url.pathname })
+    return json({ ok: true, message: 'Cloudflare Worker is ready.', path: url.pathname }, { headers: corsHeaders(origin) })
   },
 
   async scheduled(_event, env) {

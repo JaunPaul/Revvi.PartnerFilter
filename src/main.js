@@ -6,6 +6,7 @@ const DEFAULT_PAGE_SIZE = 12
 const app = document.querySelector('#app')
 const filtersForm = document.querySelector('form[fs-list-element="filters"], .product-filtering-wrap')
 const searchInput = filtersForm?.querySelector('input[type="text"]')
+const API_BASE_URL = window.__REVVI_PARTNER_FILTER_API_BASE__?.replace(/\/$/, '') ?? window.location.origin
 
 if (!app) {
   throw new Error('App root was not found')
@@ -34,7 +35,7 @@ function buildRequestUrl(page, searchParams = buildSearchParams()) {
   const params = new URLSearchParams(searchParams)
   params.set('page', String(page))
   params.set('pageSize', String(DEFAULT_PAGE_SIZE))
-  return `/partners?${params.toString()}`
+  return `${API_BASE_URL}/partners?${params.toString()}`
 }
 
 function buildPageUrl(page, searchParams = buildSearchParams()) {
