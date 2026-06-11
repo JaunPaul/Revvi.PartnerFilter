@@ -149,18 +149,15 @@ function pageUrl(page, searchParams = buildSearchParams()) {
   return buildPageUrl(page, searchParams)
 }
 
-function makePageLink(page, label, className, active = false, searchParams = buildSearchParams()) {
-  const link = document.createElement('a')
-  link.className = className
-  link.href = pageUrl(page, searchParams)
-  link.dataset.page = String(page)
-  link.textContent = label
+function updateBrowserUrl(page, searchParams, replace = false) {
+  const url = buildPageUrl(page, searchParams)
 
-  if (active) {
-    link.setAttribute('aria-current', 'page')
+  if (replace) {
+    history.replaceState({ page }, '', url)
+    return
   }
 
-  return link
+  history.pushState({ page }, '', url)
 }
 
 function renderTierList(container, tiers) {
@@ -256,16 +253,7 @@ function renderPagination(host, pagination, onPageChange, searchParams = buildSe
     throw new Error('Required pagination markup was not found on the page')
   }
 
-  let pageNumbers = host.querySelector('[data-partner-pagination-pages]')
-
-  if (!pageNumbers) {
-    pageNumbers = document.createElement('div')
-    pageNumbers.setAttribute('data-partner-pagination-pages', '')
-    pageNumbers.className = 'w-pagination-pages'
-    host.insertBefore(pageNumbers, next)
-  }
-
-  pageNumbers.innerHTML = ''
+  host.hidden = !(pagination.hasPreviousPage || pagination.hasNextPage)
 
   if (pagination.hasPreviousPage && pagination.previousPage) {
     prev.href = pageUrl(pagination.previousPage, searchParams)
@@ -289,10 +277,6 @@ function renderPagination(host, pagination, onPageChange, searchParams = buildSe
     next.removeAttribute('href')
     next.removeAttribute('data-page')
     next.setAttribute('aria-hidden', 'true')
-  }
-
-  for (const page of pagination.pages) {
-    pageNumbers.append(makePageLink(page, String(page), 'w-pagination-page', page === pagination.page, searchParams))
   }
 
   host.onclick = (event) => {
@@ -344,11 +328,6 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
     if (items.length === 0) {
       emptyState.style.display = 'block'
       paginationHost.innerHTML = ''
-      if (pushState) {
-        history.pushState({ page: pagination.page }, '', buildPageUrl(pagination.page, searchParams))
-      } else {
-        history.replaceState({ page: pagination.page }, '', buildPageUrl(pagination.page, searchParams))
-      }
       if (statusHost) {
         statusHost.textContent = 'No partners matched.'
       }
@@ -366,16 +345,11 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
       paginationHost,
       pagination,
       (nextPage) => {
+        updateBrowserUrl(nextPage, searchParams, false)
         loadPage(nextPage, { pushState: true, searchParams })
       },
       searchParams,
     )
-
-    if (pushState) {
-      history.pushState({ page: pagination.page }, '', buildPageUrl(pagination.page, searchParams))
-    } else {
-      history.replaceState({ page: pagination.page }, '', buildPageUrl(pagination.page, searchParams))
-    }
 
     if (statusHost) {
       statusHost.textContent = `Showing page ${pagination.page} of ${pagination.totalPages}.`
@@ -404,6 +378,7 @@ if (filtersForm) {
     const nextSearchParams = buildFilterSearchParams(filtersForm, buildSearchParams())
     const page = 1
     syncFilterStateFromUrl(filtersForm, nextSearchParams)
+    updateBrowserUrl(page, nextSearchParams, false)
     loadPage(page, { pushState: true, searchParams: nextSearchParams })
   }
 
