@@ -249,40 +249,52 @@ function renderPartnerCard(templateItem, partner) {
 }
 
 function renderPagination(host, pagination, onPageChange, searchParams = buildSearchParams()) {
-  host.innerHTML = ''
+  const prev = host.querySelector('[data-partner-pagination-prev]')
+  const next = host.querySelector('[data-partner-pagination-next]')
 
-  const prev = document.createElement('a')
-  prev.className = 'w-pagination-previous'
-  prev.setAttribute('aria-label', 'Previous Page')
+  if (!prev || !next) {
+    throw new Error('Required pagination markup was not found on the page')
+  }
 
-  const pageNumbers = document.createElement('div')
-  pageNumbers.className = 'w-pagination-pages'
+  let pageNumbers = host.querySelector('[data-partner-pagination-pages]')
 
-  const next = document.createElement('a')
-  next.className = 'w-pagination-next'
-  next.setAttribute('aria-label', 'Next Page')
+  if (!pageNumbers) {
+    pageNumbers = document.createElement('div')
+    pageNumbers.setAttribute('data-partner-pagination-pages', '')
+    pageNumbers.className = 'w-pagination-pages'
+    host.insertBefore(pageNumbers, next)
+  }
+
+  pageNumbers.innerHTML = ''
 
   if (pagination.hasPreviousPage && pagination.previousPage) {
     prev.href = pageUrl(pagination.previousPage, searchParams)
     prev.dataset.page = String(pagination.previousPage)
-    prev.textContent = 'Previous'
+    prev.hidden = false
+    prev.removeAttribute('aria-hidden')
   } else {
     prev.hidden = true
+    prev.removeAttribute('href')
+    prev.removeAttribute('data-page')
+    prev.setAttribute('aria-hidden', 'true')
   }
 
   if (pagination.hasNextPage && pagination.nextPage) {
     next.href = pageUrl(pagination.nextPage, searchParams)
     next.dataset.page = String(pagination.nextPage)
-    next.textContent = 'Next'
+    next.hidden = false
+    next.removeAttribute('aria-hidden')
   } else {
     next.hidden = true
+    next.removeAttribute('href')
+    next.removeAttribute('data-page')
+    next.setAttribute('aria-hidden', 'true')
   }
 
   for (const page of pagination.pages) {
     pageNumbers.append(makePageLink(page, String(page), 'w-pagination-page', page === pagination.page, searchParams))
   }
 
-  host.append(prev, pageNumbers, next)
   host.onclick = (event) => {
     const target = event.target instanceof Element ? event.target.closest('a[data-page]') : null
 
