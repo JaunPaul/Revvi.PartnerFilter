@@ -1,0 +1,18 @@
+{
+  "name": "revvi-partner-filter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "webflow:types": "node --env-file=.env scripts/generate-webflow-types.js",
+    "worker:dev": "wrangler dev worker/index.ts --port 8787 --env-file .env",
+    "worker:deploy": "wrangler deploy worker/index.ts"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0",
+    "wrangler": "^4.0.0"
+  }
+}

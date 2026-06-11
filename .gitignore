@@ -1,0 +1,5 @@
+.env
+.opencode
+node_modules
+dist
+.wrangler

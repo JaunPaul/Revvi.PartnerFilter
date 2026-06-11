@@ -1,0 +1,8 @@
+name = "revvi-partner-filter-worker"
+main = "worker/index.ts"
+compatibility_date = "2026-06-11"
+
+[vars]
+
+[triggers]
+crons = ["0 */6 * * *"]
