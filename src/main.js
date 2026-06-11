@@ -219,6 +219,8 @@ function renderRelationList(container, relations) {
 
 function renderPartnerCard(templateItem, partner) {
   const cardItem = templateItem.cloneNode(true)
+  cardItem.hidden = false
+  cardItem.removeAttribute('data-partner-template')
   const card = cardItem.querySelector('[data-partner-card]')
   const imageWrap = cardItem.querySelector('[data-partner-image-wrap]')
   const image = cardItem.querySelector('[data-partner-image]')
