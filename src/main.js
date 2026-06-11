@@ -149,6 +149,24 @@ function pageUrl(page, searchParams = buildSearchParams()) {
   return buildPageUrl(page, searchParams)
 }
 
+function ensurePaginationLink(host, selector, className, label, dataAttribute) {
+  let link = host.querySelector(selector)
+
+  if (link) {
+    link.setAttribute(dataAttribute, '')
+    return link
+  }
+
+  link = document.createElement('a')
+  link.className = className
+  link.textContent = label
+  link.setAttribute('aria-label', label)
+  link.setAttribute('data-page', '')
+  link.setAttribute(dataAttribute, '')
+  host.append(link)
+  return link
+}
+
 function updateBrowserUrl(page, searchParams, replace = false) {
   const url = buildPageUrl(page, searchParams)
 
@@ -246,22 +264,32 @@ function renderPartnerCard(templateItem, partner) {
 }
 
 function renderPagination(host, pagination, onPageChange, searchParams = buildSearchParams()) {
-  const prev = host.querySelector('[data-partner-pagination-prev]')
-  const next = host.querySelector('[data-partner-pagination-next]')
+  host.classList.add('w-pagination-wrapper')
 
-  if (!prev || !next) {
-    throw new Error('Required pagination markup was not found on the page')
-  }
+  const prev = ensurePaginationLink(
+    host,
+    '[data-partner-pagination-prev], .w-pagination-previous',
+    'w-pagination-previous',
+    'Previous Page',
+    'data-partner-pagination-prev',
+  )
+  const next = ensurePaginationLink(
+    host,
+    '[data-partner-pagination-next], .w-pagination-next',
+    'w-pagination-next',
+    'Next Page',
+    'data-partner-pagination-next',
+  )
 
-  host.hidden = !(pagination.hasPreviousPage || pagination.hasNextPage)
+  host.style.display = pagination.hasPreviousPage || pagination.hasNextPage ? '' : 'none'
 
   if (pagination.hasPreviousPage && pagination.previousPage) {
     prev.href = pageUrl(pagination.previousPage, searchParams)
     prev.dataset.page = String(pagination.previousPage)
-    prev.hidden = false
+    prev.style.display = ''
     prev.removeAttribute('aria-hidden')
   } else {
-    prev.hidden = true
+    prev.style.display = 'none'
     prev.removeAttribute('href')
     prev.removeAttribute('data-page')
     prev.setAttribute('aria-hidden', 'true')
@@ -270,10 +298,10 @@ function renderPagination(host, pagination, onPageChange, searchParams = buildSe
   if (pagination.hasNextPage && pagination.nextPage) {
     next.href = pageUrl(pagination.nextPage, searchParams)
     next.dataset.page = String(pagination.nextPage)
-    next.hidden = false
+    next.style.display = ''
     next.removeAttribute('aria-hidden')
   } else {
-    next.hidden = true
+    next.style.display = 'none'
     next.removeAttribute('href')
     next.removeAttribute('data-page')
     next.setAttribute('aria-hidden', 'true')
@@ -338,7 +366,7 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
 
     if (items.length === 0) {
       emptyState.style.display = 'block'
-      paginationHost.innerHTML = ''
+      paginationHost.style.display = 'none'
       if (statusHost) {
         statusHost.textContent = 'No partners matched.'
       }
@@ -365,7 +393,7 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
     if (statusHost) {
       statusHost.textContent = `Showing page ${pagination.page} of ${pagination.totalPages}.`
     }
-  } catch (error) {
+    } catch (error) {
     if (loadId !== activeLoadId) {
       return
     }
@@ -377,7 +405,7 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
       }
     }
     emptyState.style.display = 'block'
-    paginationHost.innerHTML = ''
+    paginationHost.style.display = 'none'
     if (statusHost) {
       statusHost.innerHTML = '<div class="partner-page__error">Unable to load partners right now.</div>'
     }
