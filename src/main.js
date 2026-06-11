@@ -1,16 +1,9 @@
 import './style.css'
-import partnerShellMarkup from './webflow-template/template.html?raw'
-import paginationMarkup from './webflow-template/paginate-template.html?raw'
 
 const DEFAULT_PAGE_SIZE = 12
-const app = document.querySelector('#app')
 const filtersForm = document.querySelector('form[fs-list-element="filters"], .product-filtering-wrap')
 const searchInput = filtersForm?.querySelector('input[type="text"]')
 const API_BASE_URL = window.__REVVI_PARTNER_FILTER_API_BASE__?.replace(/\/$/, '') ?? window.location.origin
-
-if (!app) {
-  throw new Error('App root was not found')
-}
 
 function parsePage(search) {
   const params = new URLSearchParams(search)
@@ -120,6 +113,8 @@ function buildFilterSearchParams(form, baseSearchParams = buildSearchParams()) {
   const valuesByFacet = {
     tier: [],
     type: [],
+    location: [],
+    tag: [],
   }
 
   for (const label of form.querySelectorAll('span[data-collection]')) {
@@ -150,12 +145,6 @@ function buildFilterSearchParams(form, baseSearchParams = buildSearchParams()) {
   return params
 }
 
-function createElementFromMarkup(markup) {
-  const template = document.createElement('template')
-  template.innerHTML = markup.trim()
-  return template.content.firstElementChild
-}
-
 function pageUrl(page, searchParams = buildSearchParams()) {
   return buildPageUrl(page, searchParams)
 }
@@ -175,77 +164,68 @@ function makePageLink(page, label, className, active = false, searchParams = bui
 }
 
 function renderTierList(container, tiers) {
-  const list = container?.querySelector('.w-dyn-items')
-  if (!list) {
+  if (!container) {
     return
   }
 
-  list.innerHTML = ''
+  container.innerHTML = ''
 
   if (!tiers.length) {
-    container.closest('.w-dyn-list')?.classList.add('is-hidden')
+    container.hidden = true
     return
   }
 
-  container.closest('.w-dyn-list')?.classList.remove('is-hidden')
+  container.hidden = false
 
   for (const tier of tiers) {
-    const item = document.createElement('div')
-    item.className = 'w-dyn-item'
-
     const link = document.createElement('a')
     link.className = 'tier-tag'
     link.href = tier.href
     link.textContent = tier.name
+    link.setAttribute('aria-label', tier.name)
 
     if (tier.color) {
       link.style.backgroundColor = tier.color
     }
 
-    item.append(link)
-    list.append(item)
+    container.append(link)
   }
 }
 
 function renderRelationList(container, relations) {
-  const list = container?.querySelector('.w-dyn-items')
-  if (!list) {
+  if (!container) {
     return
   }
 
-  list.innerHTML = ''
+  container.innerHTML = ''
 
   if (!relations.length) {
-    container.closest('.w-dyn-list')?.classList.add('is-hidden')
+    container.hidden = true
     return
   }
 
-  container.closest('.w-dyn-list')?.classList.remove('is-hidden')
+  container.hidden = false
 
   for (const relation of relations) {
-    const item = document.createElement('div')
-    item.className = 'w-dyn-item'
-
     const link = document.createElement('a')
     link.className = 'text-14px'
     link.href = relation.href
     link.textContent = relation.name
     link.setAttribute('aria-label', relation.name)
 
-    item.append(link)
-    list.append(item)
+    container.append(link)
   }
 }
 
 function renderPartnerCard(templateItem, partner) {
   const cardItem = templateItem.cloneNode(true)
-  const card = cardItem.querySelector('.partners-card')
-  const imageWrap = cardItem.querySelector('.partners-card-img')
-  const image = cardItem.querySelector('img')
-  const typeLabel = cardItem.querySelector('[fs-list-field="type"]')
-  const nameLabel = cardItem.querySelector('[fs-list-field="name"]')
-  const tiersContainer = cardItem.querySelector('[fs-cmsnest-collection="tiers"]')
-  const locationsContainer = cardItem.querySelector('[fs-cmsnest-collection="locations"]')
+  const card = cardItem.querySelector('[data-partner-card]')
+  const imageWrap = cardItem.querySelector('[data-partner-image-wrap]')
+  const image = cardItem.querySelector('[data-partner-image]')
+  const typeLabel = cardItem.querySelector('[data-partner-type]')
+  const nameLabel = cardItem.querySelector('[data-partner-name]')
+  const tiersContainer = cardItem.querySelector('[data-partner-tiers]')
+  const locationsContainer = cardItem.querySelector('[data-partner-locations]')
 
   card.href = partner.href
   card.setAttribute('aria-label', `Open ${partner.name} partner page`)
@@ -255,8 +235,9 @@ function renderPartnerCard(templateItem, partner) {
   if (partner.image) {
     image.src = partner.image.url
     image.alt = partner.image.alt ?? partner.name
+    imageWrap.hidden = false
   } else {
-    imageWrap?.classList.add('is-hidden')
+    imageWrap.hidden = true
   }
 
   renderTierList(tiersContainer, partner.tiers)
@@ -268,51 +249,39 @@ function renderPartnerCard(templateItem, partner) {
 function renderPagination(host, pagination, onPageChange, searchParams = buildSearchParams()) {
   host.innerHTML = ''
 
-  const nav = createElementFromMarkup(paginationMarkup)
-  if (!nav) {
-    return
-  }
+  const prev = document.createElement('a')
+  prev.className = 'w-pagination-previous'
+  prev.setAttribute('aria-label', 'Previous Page')
 
-  const prev = nav.querySelector('.w-pagination-previous')
-  const next = nav.querySelector('.w-pagination-next')
+  const pageNumbers = document.createElement('div')
+  pageNumbers.className = 'w-pagination-pages'
+
+  const next = document.createElement('a')
+  next.className = 'w-pagination-next'
+  next.setAttribute('aria-label', 'Next Page')
 
   if (pagination.hasPreviousPage && pagination.previousPage) {
     prev.href = pageUrl(pagination.previousPage, searchParams)
     prev.dataset.page = String(pagination.previousPage)
-    prev.style.display = ''
-    prev.removeAttribute('aria-hidden')
-    prev.tabIndex = 0
+    prev.textContent = 'Previous'
   } else {
-    prev.style.display = 'none'
-    prev.setAttribute('aria-hidden', 'true')
-    prev.tabIndex = -1
-    prev.removeAttribute('href')
+    prev.hidden = true
   }
 
   if (pagination.hasNextPage && pagination.nextPage) {
     next.href = pageUrl(pagination.nextPage, searchParams)
     next.dataset.page = String(pagination.nextPage)
-    next.style.display = ''
-    next.removeAttribute('aria-hidden')
-    next.tabIndex = 0
+    next.textContent = 'Next'
   } else {
-    next.style.display = 'none'
-    next.setAttribute('aria-hidden', 'true')
-    next.tabIndex = -1
-    next.removeAttribute('href')
+    next.hidden = true
   }
-
-  const pageNumbers = document.createElement('div')
-  pageNumbers.className = 'w-pagination-pages'
 
   for (const page of pagination.pages) {
-    pageNumbers.append(
-      makePageLink(page, String(page), 'w-pagination-page', page === pagination.page, searchParams),
-    )
+    pageNumbers.append(makePageLink(page, String(page), 'w-pagination-page', page === pagination.page, searchParams))
   }
 
-  nav.insertBefore(pageNumbers, next)
-  nav.addEventListener('click', (event) => {
+  host.append(prev, pageNumbers, next)
+  host.onclick = (event) => {
     const target = event.target instanceof Element ? event.target.closest('a[data-page]') : null
 
     if (!target) {
@@ -322,35 +291,25 @@ function renderPagination(host, pagination, onPageChange, searchParams = buildSe
     event.preventDefault()
     const page = Number.parseInt(target.dataset.page ?? '1', 10)
     onPageChange(page)
-  })
-
-  host.append(nav)
+  }
 }
 
-const shell = createElementFromMarkup(partnerShellMarkup)
-const listContainer = shell.querySelector('.partners-cards-grid.w-dyn-items')
-const templateItem = listContainer.firstElementChild
-const emptyState = shell.querySelector('#filter-empty')
-const emptyStateMarkup = emptyState.innerHTML
+const listContainer = document.querySelector('[data-partner-grid]')
+const templateItem = listContainer?.querySelector('[data-partner-template]')
+const emptyState = document.querySelector('[data-partner-empty]')
+const paginationHost = document.querySelector('[data-partner-pagination]')
+const statusHost = document.querySelector('[data-partner-status]')
 
-listContainer.innerHTML = ''
+if (!listContainer || !templateItem || !emptyState || !paginationHost) {
+  throw new Error('Required partner filter markup was not found on the page')
+}
 
-app.innerHTML = `
-  <div class="partner-page">
-    <div class="partner-page__status" data-status aria-live="polite"></div>
-    <div data-results></div>
-    <div class="partner-pagination" data-pagination></div>
-  </div>
-`
-
-const resultsHost = app.querySelector('[data-results]')
-const paginationHost = app.querySelector('[data-pagination]')
-const statusHost = app.querySelector('[data-status]')
-
-resultsHost.append(shell)
+templateItem.hidden = true
 
 async function loadPage(page, { pushState = true, searchParams = buildSearchParams() } = {}) {
-  statusHost.textContent = 'Loading partners...'
+  if (statusHost) {
+    statusHost.textContent = 'Loading partners...'
+  }
 
   try {
     const response = await fetch(buildRequestUrl(page, searchParams))
@@ -362,11 +321,13 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
     const payload = await response.json()
     const { items, pagination } = payload
 
-    listContainer.innerHTML = ''
+    for (const child of Array.from(listContainer.children)) {
+      if (child !== templateItem) {
+        child.remove()
+      }
+    }
 
     if (items.length === 0) {
-      listContainer.closest('.w-dyn-list')?.classList.add('is-hidden')
-      emptyState.innerHTML = emptyStateMarkup
       emptyState.style.display = 'block'
       paginationHost.innerHTML = ''
       if (pushState) {
@@ -374,11 +335,12 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
       } else {
         history.replaceState({ page: pagination.page }, '', buildPageUrl(pagination.page, searchParams))
       }
-      statusHost.textContent = 'No partners matched.'
+      if (statusHost) {
+        statusHost.textContent = 'No partners matched.'
+      }
       return
     }
 
-    listContainer.closest('.w-dyn-list')?.classList.remove('is-hidden')
     emptyState.style.display = 'none'
 
     const itemTemplate = templateItem.cloneNode(true)
@@ -401,15 +363,21 @@ async function loadPage(page, { pushState = true, searchParams = buildSearchPara
       history.replaceState({ page: pagination.page }, '', buildPageUrl(pagination.page, searchParams))
     }
 
-    statusHost.textContent = `Showing page ${pagination.page} of ${pagination.totalPages}.`
+    if (statusHost) {
+      statusHost.textContent = `Showing page ${pagination.page} of ${pagination.totalPages}.`
+    }
   } catch (error) {
     console.error(error)
-    listContainer.innerHTML = ''
-    listContainer.closest('.w-dyn-list')?.classList.add('is-hidden')
+    for (const child of Array.from(listContainer.children)) {
+      if (child !== templateItem) {
+        child.remove()
+      }
+    }
     emptyState.style.display = 'block'
-    emptyState.innerHTML = '<div class="body-1 u-medium">Unable to load partners right now.</div>'
     paginationHost.innerHTML = ''
-    statusHost.innerHTML = '<div class="partner-page__error">Unable to load partners right now.</div>'
+    if (statusHost) {
+      statusHost.innerHTML = '<div class="partner-page__error">Unable to load partners right now.</div>'
+    }
   }
 }
 
