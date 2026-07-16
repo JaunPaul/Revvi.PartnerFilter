@@ -243,25 +243,38 @@ function renderTierList(container, tiers) {
   }
 }
 
-function renderRelationList(container, relations) {
+function renderRelationList(container, relations, displayName) {
   container.replaceChildren();
 
   const relationList = Array.isArray(relations) ? relations : [];
   const firstRelation = relationList[0];
+  const relationName = displayName ?? firstRelation?.name;
 
-  if (!firstRelation?.name) {
+  if (!relationName) {
     return;
   }
 
   const location = document.createElement("div");
   location.className = "tag-location";
-  location.textContent = firstRelation.name;
-  location.setAttribute("aria-label", firstRelation.name);
+  location.textContent = relationName;
+  location.setAttribute("aria-label", relationName);
 
   container.append(location);
 }
 
-function renderPartnerCard(templateItem, partner) {
+function activeLocationName(locations, searchParams) {
+  const activeLocations = searchParams
+    .getAll("location")
+    .flatMap((value) => value.split(","))
+    .map(normalizeFilterValue)
+    .filter(Boolean);
+
+  return locations.find((location) =>
+    activeLocations.includes(normalizeFilterValue(location.name ?? "")),
+  )?.name;
+}
+
+function renderPartnerCard(templateItem, partner, searchParams) {
   const cardItem = templateItem.cloneNode(true);
   cardItem.hidden = false;
   cardItem.removeAttribute("data-partner-template");
@@ -287,11 +300,14 @@ function renderPartnerCard(templateItem, partner) {
   }
 
   renderTierList(tiersContainer, partner.tiers);
-  renderRelationList(locationsContainer, partner.locations);
+  const locations = Array.isArray(partner.locations) ? partner.locations : [];
+  const locationCount = locations.length;
+  const filteredLocation = activeLocationName(locations, searchParams);
+  const locationName =
+    locationCount > 1 ? (filteredLocation ?? "Multi-location") : undefined;
+  renderRelationList(locationsContainer, locations, locationName);
+
   const plusElement = cardItem.querySelector(".plus");
-  const locationCount = Array.isArray(partner.locations)
-    ? partner.locations.length
-    : 0;
   if (plusElement) {
     plusElement.style.display = locationCount > 1 ? "" : "none";
   }
@@ -425,7 +441,9 @@ async function loadPage(
 
     const itemTemplate = templateItem.cloneNode(true);
     for (const partner of items) {
-      listContainer.append(renderPartnerCard(itemTemplate, partner));
+      listContainer.append(
+        renderPartnerCard(itemTemplate, partner, searchParams),
+      );
     }
 
     renderPagination(
