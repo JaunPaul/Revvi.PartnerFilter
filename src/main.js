@@ -257,15 +257,16 @@ function renderRelationList(container, relations) {
 
   container.hidden = false;
 
-  for (const relation of relations) {
-    const link = document.createElement("a");
-    link.className = "tag-location";
-    link.href = relation.href;
-    link.textContent = relation.name;
-    link.setAttribute("aria-label", relation.name);
+  const firstRelation = relations?.[0];
 
-    container.append(link);
+  if (!firstRelation) {
+    return;
   }
+
+  const link = document.createElement("div");
+  link.className = "tag-location";
+  link.textContent = firstRelation.name;
+  link.setAttribute("aria-label", firstRelation.name);
 }
 
 function renderPartnerCard(templateItem, partner) {
@@ -279,7 +280,7 @@ function renderPartnerCard(templateItem, partner) {
   const nameLabel = cardItem.querySelector("[data-partner-name]");
   const tiersContainer = cardItem.querySelector("[data-partner-tiers]");
   const locationsContainer = cardItem.querySelector("[data-partner-locations]");
-  const plusElement = card.querySelector(".plus");
+  const plusElement = cardItem.querySelector(".plus");
 
   card.href = partner.href;
   card.setAttribute("aria-label", `Open ${partner.name} partner page`);
