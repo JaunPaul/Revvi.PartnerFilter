@@ -289,7 +289,9 @@ function renderPartnerCard(templateItem, partner) {
   renderTierList(tiersContainer, partner.tiers);
   renderRelationList(locationsContainer, partner.locations);
   const plusElement = cardItem.querySelector(".plus");
-
+  const locationCount = Array.isArray(partner.locations)
+    ? partner.locations.length
+    : 0;
   if (plusElement) {
     plusElement.style.display = locationCount > 1 ? "" : "none";
   }
