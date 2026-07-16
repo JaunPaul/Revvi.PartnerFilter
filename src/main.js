@@ -244,29 +244,21 @@ function renderTierList(container, tiers) {
 }
 
 function renderRelationList(container, relations) {
-  if (!container) {
+  container.replaceChildren();
+
+  const relationList = Array.isArray(relations) ? relations : [];
+  const firstRelation = relationList[0];
+
+  if (!firstRelation?.name) {
     return;
   }
 
-  container.innerHTML = "";
+  const location = document.createElement("div");
+  location.className = "tag-location";
+  location.textContent = firstRelation.name;
+  location.setAttribute("aria-label", firstRelation.name);
 
-  if (!relations.length) {
-    container.hidden = true;
-    return;
-  }
-
-  container.hidden = false;
-
-  const firstRelation = relations?.[0];
-
-  if (!firstRelation) {
-    return;
-  }
-
-  const link = document.createElement("div");
-  link.className = "tag-location";
-  link.textContent = firstRelation.name;
-  link.setAttribute("aria-label", firstRelation.name);
+  container.append(location);
 }
 
 function renderPartnerCard(templateItem, partner) {
@@ -280,7 +272,6 @@ function renderPartnerCard(templateItem, partner) {
   const nameLabel = cardItem.querySelector("[data-partner-name]");
   const tiersContainer = cardItem.querySelector("[data-partner-tiers]");
   const locationsContainer = cardItem.querySelector("[data-partner-locations]");
-  const plusElement = cardItem.querySelector(".plus");
 
   card.href = partner.href;
   card.setAttribute("aria-label", `Open ${partner.name} partner page`);
@@ -297,8 +288,10 @@ function renderPartnerCard(templateItem, partner) {
 
   renderTierList(tiersContainer, partner.tiers);
   renderRelationList(locationsContainer, partner.locations);
+  const plusElement = cardItem.querySelector(".plus");
+
   if (plusElement) {
-    plusElement.hidden = (partner.locations?.length ?? 0) <= 1;
+    plusElement.style.display = locationCount > 1 ? "" : "none";
   }
 
   return cardItem;
